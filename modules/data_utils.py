@@ -176,7 +176,7 @@ class MURaM:
                             muram = self, 
                             muram_quantity = self.atm_quant[..., i], 
                             muram_logtau = muram_logtau,
-                            output_name  = f"{out_name}" + stratif_base_name
+                            output_name  = f"{out_name}" + stratif_base_name,
                             opt_path = opt_detph_path)
                 print("Done!")
             else:
