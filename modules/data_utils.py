@@ -4,7 +4,7 @@ import pandas as pd
 
 from skimage import filters
 
-from scipy.interpolate import RegularGridInterpolator, CubicSpline, interp1d
+from scipy.interpolate import RegularGridInterpolator, CubicSpline
 from scipy.integrate import simpson
 
 from sklearn.model_selection import train_test_split
@@ -416,7 +416,7 @@ def od_cube(muram: MURaM, muram_box: dict, filename: str, od_path: Path, od_name
                             3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8.])
             
             # Charging the table of temperature indices, pressure indices and opacities
-            df_kappa = pd.read_csv('../csv/kappa.0.dat', delim_whitespace=True, header=None)
+            df_kappa = pd.read_csv('./csv/kappa.0.dat', delim_whitespace=True, header=None)
             df_kappa.columns = ["Temperature index", "Pressure index", "Opacity value"]
             temp_indices = df_kappa["Temperature index" ].unique()
             press_indices = df_kappa["Pressure index"].unique()
@@ -499,8 +499,8 @@ def map_to_logtau(muram: MURaM,
     """
     
     def logtau_mapper(orig_arr: np.ndarray, 
-               corresp_logtau: np.ndarray,
-               new_logtau: np.ndarray) -> np.ndarray:
+                 corresp_logtau: np.ndarray,
+                 new_logtau: np.ndarray) -> np.ndarray:
         """
         Function for mapping the quantities distribution from geometrical height to optical depth.
         Args:
@@ -510,14 +510,30 @@ def map_to_logtau(muram: MURaM,
         Returns:
             (np.ndarray) Array containing the mapped quantity to the new distribution on optical depth.
         """
+        # Sort the arrays
         sort_indices = np.argsort(corresp_logtau)
         corresp_logtau_sorted = corresp_logtau[sort_indices]
         orig_arr_sorted = orig_arr[sort_indices]
-        print(corresp_logtau_sorted)
-        logtau_mapper = interp1d(x = corresp_logtau_sorted, y = orig_arr_sorted)
+
+        # Check for duplicates and handle them
+        unique_logtau, unique_indices = np.unique(corresp_logtau_sorted, return_index=True)
+        if len(unique_logtau) < len(corresp_logtau_sorted):
+            # Duplicates exist, average the corresponding y values
+            unique_orig_arr = np.zeros_like(unique_logtau)
+            for i, tau in enumerate(unique_logtau):
+                unique_orig_arr[i] = np.mean(orig_arr_sorted[corresp_logtau_sorted == tau])
+            corresp_logtau_sorted = unique_logtau
+            orig_arr_sorted = unique_orig_arr
+
+        # Ensure the sequence is strictly increasing
+        if not np.all(np.diff(corresp_logtau_sorted) > 0):
+            raise ValueError("corresp_logtau_sorted is not strictly increasing after handling duplicates.")
+
+        # Perform interpolation
+        logtau_mapper = CubicSpline(x=corresp_logtau_sorted, y=orig_arr_sorted)
         new_arr = logtau_mapper(new_logtau)
         return new_arr
-    
+        
     # New optical depth stratification array.
     n_logtau = new_logtau_height.shape[0]
 
