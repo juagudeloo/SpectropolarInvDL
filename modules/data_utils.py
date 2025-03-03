@@ -165,7 +165,7 @@ class MURaM:
         n_logtau = new_logtau_height.shape[0]
         stratif_base_name = f"_logtau_{n_logtau}_heights.npy"
         
-        output_names = ["mtpr", "mpre", "mrho", "mbxx", "mbyy", "mbzz", "mvzz"]
+        output_names = ["mtpr", "mpre", "mrho", "mbqq", "mbuu", "mbvv", "mvzz"]
 
         # Check if the quantities are already mapped
         new_atm_quant = np.zeros((self.nx, self.ny, n_logtau, self.atm_quant.shape[-1]))
