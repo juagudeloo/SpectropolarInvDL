@@ -566,13 +566,13 @@ def charge_logtau_muram(muram: MURaM, filename: str, shape: tuple, opt_path: str
     nx, ny, nlog = shape
     
     # Charge the EOS data and the density info.
-    mtpr = np.load(opt_path / (f"mtpr"+f"_logtau_{nlog}_heights_{muram.filename}.npy"))
-    mpre = np.load(opt_path / (f"mpre"+f"_logtau_{nlog}_heights_{muram.filename}.npy"))
-    mrho= np.load(opt_path / (f"mrho"+f"_logtau_{nlog}_heights_{muram.filename}.npy"))
-    mbqq= np.load(opt_path / (f"mbqq"+f"_logtau_{nlog}_heights_{muram.filename}.npy"))
-    mbuu= np.load(opt_path / (f"mbuu"+f"_logtau_{nlog}_heights_{muram.filename}.npy"))
-    mbvv= np.load(opt_path / (f"mbvv"+f"_logtau_{nlog}_heights_{muram.filename}.npy"))
-    mvzz= np.load(opt_path / (f"mvzz"+f"_logtau_{nlog}_heights_{muram.filename}.npy"))
+    mtpr = np.load(opt_path / (f"mtpr"+f"_logtau_{nlog}_heights_{muram.filename}.npy")).reshape(nx, ny, nlog)
+    mpre = np.load(opt_path / (f"mpre"+f"_logtau_{nlog}_heights_{muram.filename}.npy")).reshape(nx, ny, nlog)
+    mrho= np.load(opt_path / (f"mrho"+f"_logtau_{nlog}_heights_{muram.filename}.npy")).reshape(nx, ny, nlog)
+    mbqq= np.load(opt_path / (f"mbqq"+f"_logtau_{nlog}_heights_{muram.filename}.npy")).reshape(nx, ny, nlog)
+    mbuu= np.load(opt_path / (f"mbuu"+f"_logtau_{nlog}_heights_{muram.filename}.npy")).reshape(nx, ny, nlog)
+    mbvv= np.load(opt_path / (f"mbvv"+f"_logtau_{nlog}_heights_{muram.filename}.npy")).reshape(nx, ny, nlog)
+    mvzz= np.load(opt_path / (f"mvzz"+f"_logtau_{nlog}_heights_{muram.filename}.npy")).reshape(nx, ny, nlog)
     
     
     # Create a dictionary for saving the quantities
