@@ -317,7 +317,7 @@ class MURaM:
             for jz in range(self.ny):
                 for i in range(self.stokes.shape[-1]):
                     cont_values = self.stokes[jx, jz, cont_indices, 0]  # corresponding intensity values to the selected continuum indices
-                    cont_model = CubicSpline(wl_cont_values, cont_values, kind="cubic")  # Interpolation applied over the assumed continuum values
+                    cont_model = CubicSpline(wl_cont_values, cont_values)  # Interpolation applied over the assumed continuum values
                     scaled_stokes[jx, jz, :, i] = self.stokes[jx, jz, :, i] / cont_model(self.new_wl)
         self.stokes = scaled_stokes
         
