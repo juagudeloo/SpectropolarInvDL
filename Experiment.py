@@ -18,7 +18,7 @@ def main():
     ### DATA LOADING ###
     #filenames to be readed for creating the dataset
     filenames = ["080000", 
-                 #"085000", "090000"
+                 "085000", "090000"
                  ]
         
     # Setup device agnostic code
