@@ -163,7 +163,7 @@ class MURaM:
         opt_detph_path = self.ptm / "opt_depth"
         
         n_logtau = new_logtau_height.shape[0]
-        stratif_base_name = f"_logtau_{n_logtau}_heights.npy"
+        stratif_base_name = f"_logtau_{n_logtau}_heights_{self.filename}.npy"
         
         output_names = ["mtpr", "mpre", "mrho", "mbqq", "mbuu", "mbvv", "mvzz"]
 
@@ -557,20 +557,20 @@ def map_to_logtau(muram: MURaM,
     print(f"saved in {output_path}")
     
     return quantity_tau
-def charge_logtau_muram(filename: str, shape: tuple, opt_path: str) -> dict:
+def charge_logtau_muram(muram: MURaM, filename: str, shape: tuple, opt_path: str) -> dict:
     """
     Charges a dictionary with the thermodynamical information of the simulation.
     """
     nx, ny, nlog = shape
     
     # Charge the EOS data and the density info.
-    mtpr = np.load(opt_path / f"mtpr_logtau_{filename}.npy")
-    mpre = np.load(opt_path / f"mpre_logtau_{filename}.npy")
-    mrho= np.load(opt_path / f"mrho_logtau_{filename}.npy")
-    mbxx= np.load(opt_path / f"mbxx_logtau_{filename}.npy")
-    mbyy= np.load(opt_path / f"mbyy_logtau_{filename}.npy")
-    mbzz= np.load(opt_path / f"mbzz_logtau_{filename}.npy")
-    mvzz= np.load(opt_path / f"mvzz_logtau_{filename}.npy")
+    mtpr = np.load(opt_path / f"mtpr_"+f"_logtau_{nlog}_heights_{muram.filename}.npy")
+    mpre = np.load(opt_path / f"mpre_"+f"_logtau_{nlog}_heights_{muram.filename}.npy")
+    mrho= np.load(opt_path / f"mrho_"+f"_logtau_{nlog}_heights_{muram.filename}.npy")
+    mbxx= np.load(opt_path / f"mbxx_"+f"_logtau_{nlog}_heights_{muram.filename}.npy")
+    mbyy= np.load(opt_path / f"mbyy_"+f"_logtau_{nlog}_heights_{muram.filename}.npy")
+    mbzz= np.load(opt_path / f"mbzz_"+f"_logtau_{nlog}_heights_{muram.filename}.npy")
+    mvzz= np.load(opt_path / f"mvzz_"+f"_logtau_{nlog}_heights_{muram.filename}.npy")
     
     
     # Create a dictionary for saving the quantities
