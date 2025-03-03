@@ -170,7 +170,7 @@ class MURaM:
         # Check if the quantities are already mapped
         check_exist = 0
         for i, out_name in enumerate(output_names):
-            if not os.path.exists(opt_detph_path / f"{out_name}" + stratif_base_name):
+            if not os.path.exists(opt_detph_path / (f"{out_name}" + stratif_base_name)):
                 print(f"Mapping {self.filename} {output_names[i]} to log tau...")
                 self.atm_quant[..., i] = map_to_logtau(muram_quantity = self.atm_quant[..., i], 
                             muram_logtau = muram_logtau,
