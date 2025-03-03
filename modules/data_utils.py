@@ -178,7 +178,8 @@ class MURaM:
                             muram_quantity = self.atm_quant[..., i], 
                             muram_logtau = muram_logtau,
                             output_name  = f"{out_name}" + stratif_base_name,
-                            opt_path = opt_detph_path)
+                            opt_path = opt_detph_path,
+                            new_logtau_height= new_logtau_height)
                 print("Done!")
             else:
                 check_exist += 1
