@@ -577,6 +577,7 @@ def charge_logtau_muram(muram: MURaM, filename: str, shape: tuple, opt_path: str
     
     # Create a dictionary for saving the quantities
     muram_box = np.array([mtpr, mpre, mrho, mbqq, mbuu, mbvv, mvzz])
+    print("muram_box shape:", muram_box.shape)
     muram_box = np.moveaxis(muram_box, 0, 1)
     muram_box = np.moveaxis(muram_box, 1, 2)
     muram_box = np.moveaxis(muram_box, 2, 3)
