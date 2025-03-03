@@ -165,14 +165,15 @@ class MURaM:
         n_logtau = new_logtau_height.shape[0]
         stratif_base_name = f"_logtau_{n_logtau}_heights.npy"
         
-        output_names = ["mtpr", "mpre", "mrho", "mbxx", "mbyy", "mbzz", "mvxx", "mvyy", "mvzz"]
+        output_names = ["mtpr", "mpre", "mrho", "mbxx", "mbyy", "mbzz", "mvzz"]
 
         # Check if the quantities are already mapped
+        new_atm_quant = np.zeros((self.nx, self.ny, n_logtau, self.atm_quant.shape[-1]))
         check_exist = 0
         for i, out_name in enumerate(output_names):
             if not os.path.exists(opt_detph_path / (f"{out_name}" + stratif_base_name)):
                 print(f"Mapping {self.filename} {output_names[i]} to log tau...")
-                self.atm_quant[..., i] = map_to_logtau(
+                new_atm_quant[...,i] = map_to_logtau(
                             muram = self, 
                             muram_quantity = self.atm_quant[..., i], 
                             muram_logtau = muram_logtau,
@@ -183,7 +184,6 @@ class MURaM:
                 check_exist += 1
                 
         # If all quantities or some are already mapped
-        new_atm_quant = np.zeros((self.nx, self.ny, n_logtau, self.atm_quant.shape[-1]))
         if check_exist > 0:
             print("All quantities already mapped!")     
             new_atm_quant = charge_logtau_muram(filename = self.filename,
