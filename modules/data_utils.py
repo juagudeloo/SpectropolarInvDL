@@ -183,11 +183,15 @@ class MURaM:
                 check_exist += 1
                 
         # If all quantities or some are already mapped
+        new_atm_quant = np.zeros((self.nx, self.ny, n_logtau, self.atm_quant.shape[-1]))
         if check_exist > 0:
             print("All quantities already mapped!")     
-            self.atm_quant = charge_logtau_muram(filename = self.filename,
+            new_atm_quant = charge_logtau_muram(filename = self.filename,
                                             shape = (self.nx, self.ny, n_logtau),
                                             opt_path = opt_detph_path)
+        self.atm_quant = new_atm_quant
+        print("The new shape of the atmosphere quantities is:", self.atm_quant.shape)
+        
     def degrade_spec_resol(self, new_points: int) -> None:
         """
         Degrade the spectral resolution of the Stokes parameters.
@@ -538,12 +542,12 @@ def map_to_logtau(muram: MURaM,
     n_logtau = new_logtau_height.shape[0]
 
     # Mapping to the new optical depth stratification
-    quantity_tau = np.zeros((muram.nx,n_logtau,muram.ny))
+    quantity_tau = np.zeros((muram.nx,muram.ny,n_logtau))
     for ix in range(muram.nx):
         if ix % 100 == 0:
             print(ix)
         for iy in range(muram.ny):
-            quantity_tau[ix,:,iy] = logtau_mapper(orig_arr = muram_quantity[ix,iy,:], 
+            quantity_tau[ix,iy,:] = logtau_mapper(orig_arr = muram_quantity[ix,iy,:], 
                                            corresp_logtau = muram_logtau[ix,iy,:], 
                                            new_logtau = new_logtau_height)
     
