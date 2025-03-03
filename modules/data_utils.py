@@ -458,7 +458,7 @@ def od_cube(muram: MURaM, muram_box: dict, filename: str, od_path: Path, od_name
             
             # Optical depth array calculation
             dz = 1e6 # 10 km -> 1e6 cm
-            tau[:,:,muram.nz-1] = 0
+            tau[:,:,muram.nz-1] = 1e-3
 
             print(f"Calculating {filename} tau...")
             for iz in range(1,muram.nz):
