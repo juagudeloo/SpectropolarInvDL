@@ -4,7 +4,7 @@ import pandas as pd
 
 from skimage import filters
 
-from scipy.interpolate import RegularGridInterpolator, CubicSpline
+from scipy.interpolate import RegularGridInterpolator, CubicSpline, interp1d
 from scipy.integrate import simpson
 
 from sklearn.model_selection import train_test_split
@@ -514,7 +514,7 @@ def map_to_logtau(muram: MURaM,
         corresp_logtau_sorted = corresp_logtau[sort_indices]
         orig_arr_sorted = orig_arr[sort_indices]
         print(corresp_logtau_sorted)
-        logtau_mapper = CubicSpline(x = corresp_logtau_sorted, y = orig_arr_sorted)
+        logtau_mapper = interp1d(x = corresp_logtau_sorted, y = orig_arr_sorted)
         new_arr = logtau_mapper(new_logtau)
         return new_arr
     
