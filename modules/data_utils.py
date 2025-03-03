@@ -60,7 +60,7 @@ class MURaM:
         filename : str
             Name of the file to be processed.
         """
-        self.ptm = Path("/scratchsan/observatorio/juagudeloo/data")
+        self.ptm = Path("./data")
         self.filename = filename
         
         self.nlam = 300  # this parameter is useful when managing the self.stokes parameters
@@ -81,7 +81,7 @@ class MURaM:
         
         quantities_dir = "geom_height"
         print("Charging temperature and pressure...")
-        eos = eos = np.fromfile(os.path.join(quantities_dir,  f"eos.{self.filename}"), dtype=np.float32)
+        eos = np.fromfile(self.ptm / os.path.join(quantities_dir,  f"eos.{self.filename}"), dtype=np.float32)
         eos = eos.reshape((2, self.nx*self.nz*self.ny), order = "C")
         mtpr = eos[0]
         mpre = eos[1]
