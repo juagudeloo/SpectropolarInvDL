@@ -68,7 +68,7 @@ def main():
         #Creating the model
         hu = 256
         model = LinearJarolim(in_shape=n_spec_points*4,
-                              out_shape=6*20,
+                              out_shape=7*3,
                               hidden_units=hu,
                               n_layers=8).to(device)
         model = model.float()
