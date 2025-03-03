@@ -187,7 +187,9 @@ class MURaM:
         # If all quantities or some are already mapped
         if check_exist > 0:
             print("All quantities already mapped!")     
-            new_atm_quant = charge_logtau_muram(filename = self.filename,
+            new_atm_quant = charge_logtau_muram(
+                                            self,
+                                            filename = self.filename,
                                             shape = (self.nx, self.ny, n_logtau),
                                             opt_path = opt_detph_path)
         self.atm_quant = new_atm_quant
