@@ -22,8 +22,7 @@ def main():
     filenames = ["175000"]
     
     # Load data
-    test_spectral_res = [36, 
-                         58, 90, 114
+    test_spectral_res = [114
                          ]
     
     #########################################################################################
@@ -41,13 +40,14 @@ def main():
     #########################################################################################
     models_types = [
       "linear", 
-      "cnn1d_4channels"
       ]
     
     for model_type in models_types:
       for n_spec_points in test_spectral_res:
         # Load data
-        atm_data, stokes_data, mags_names, phys_maxmin = load_data_cubes(filenames, n_spectral_points=n_spec_points)
+        atm_data, stokes_data, mags_names, phys_maxmin = load_data_cubes(filenames, 
+                                                                         n_spectral_points=n_spec_points,
+                                                                         new_logtau_height = np.array([-2.0, -0.8, 0]))
         
         # Descale atm data
         atm_data_original = np.reshape(np.copy(atm_data[0]), (480,480,20,6))

@@ -392,22 +392,21 @@ def generate_results(model: torch.nn.Module,
 
 ### VISUALIZATION UTILITIES ###
 
-tau = np.linspace(-2.5, 0, 20)
-
 def plot_surface_generated_atm(atm_generated: np.ndarray,
        atm_original: np.ndarray,
        model_subdir: str,
        image_name: str,
        titles: list,
+       itau: int,
        images_dir: str = "images",
-       itau: int = 10
+       logtau: np.ndarray = np.linspace(-2.5, 0, 20),
        ):
 
   print("atm_generated shape:", atm_generated.shape)
   print("atm_original shape:", atm_original.shape)
   fig, axs = plt.subplots(2, 6, figsize=(3.5*6, 3*2))
   
-  tau_value = tau[itau]
+  tau_value = logtau[itau]
   fig.suptitle(r'$\log \tau$'+f' = {tau_value:.2f}')
 
   # Define colorbar limits based on atm_original
@@ -467,6 +466,7 @@ def plot_od_generated_atm(
        model_subdir: str,
        image_name: str,
        titles: list,
+       logtau: np.ndarray = np.linspace(-2.5, 0, 20),
        images_dir: str = "images"
        ):
 
@@ -488,8 +488,8 @@ def plot_od_generated_atm(
   for i, (param_idx, title, unit) in enumerate(params):
     row = (i // 3)
     col = i % 3
-    axs[row, col].plot(tau, atm_generated[:, :, :, param_idx].mean(axis=(0, 1)), color='orangered', label='Generated')
-    axs[row, col].plot(tau, atm_original[:, :, :, param_idx].mean(axis=(0, 1)), color='navy', label='Original')
+    axs[row, col].plot(logtau, atm_generated[:, :, :, param_idx].mean(axis=(0, 1)), color='orangered', label='Generated')
+    axs[row, col].plot(logtau, atm_original[:, :, :, param_idx].mean(axis=(0, 1)), color='navy', label='Original')
     axs[row, col].set_title(f"{titles[i]} ({unit})")
     axs[row, col].set_xlabel(r'$\log \tau$')
     axs[row, col].axis('on')
@@ -514,6 +514,7 @@ def plot_density_bars(atm_generated: np.ndarray,
   image_name: str,
   titles: list,
   tau_index: int,
+  logtau: np.ndarray = np.linspace(-2.5, 0, 20),
   images_dir: str = "images",
   num_bars: int = 10):
   """
@@ -547,7 +548,7 @@ def plot_density_bars(atm_generated: np.ndarray,
   num_rows = (num_params + 1) // 2  # Calculate the number of rows needed for two columns
 
   fig, axs = plt.subplots(2, num_rows, figsize=(3.5 * num_rows, 3 * 2))
-  fig.suptitle(r'$\log \tau$'+f' = {tau[tau_index]:.2f}')
+  fig.suptitle(r'$\log \tau$'+f' = {logtau[tau_index]:.2f}')
 
   for j in range(num_params):
     row = j // 3
@@ -585,7 +586,7 @@ def plot_density_bars(atm_generated: np.ndarray,
   images_dir = os.path.join(images_dir, model_subdir, dense_diag_subdir)
   if not os.path.exists(images_dir):
     os.makedirs(images_dir)
-  image_path = os.path.join(images_dir, f"{tau[tau_index]:.2f}_{image_name}")
+  image_path = os.path.join(images_dir, f"{logtau[tau_index]:.2f}_{image_name}")
   fig.savefig(image_path)
 
   print(f"Saved image to: {image_path}")

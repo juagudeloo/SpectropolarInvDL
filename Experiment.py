@@ -2,6 +2,7 @@ import sys
 
 from timeit import default_timer as timer 
 
+import numpy as np
 import torch
 from torch import nn
 
@@ -17,7 +18,7 @@ def main():
     ### DATA LOADING ###
     #filenames to be readed for creating the dataset
     filenames = ["080000", 
-                 "085000", "090000"
+                 #"085000", "090000"
                  ]
         
     # Setup device agnostic code
@@ -30,15 +31,17 @@ def main():
     ### Checking linear vs convolutional 1d models ###
     
     model_types = [
-        "linear",
-        "cnn1d_4channels"]
+        "linear"
+        ]
     epochs = 10
     lr = 1e-3
-    test_spectral_res = [36, 58, 90, 114]
+    test_spectral_res = [114]
     
     #1. Loop through spectral resolutions
     for n_spec_points in test_spectral_res:
-        atm_data, stokes_data, wl_points = load_training_data(filenames, n_spectral_points=n_spec_points)
+        atm_data, stokes_data, wl_points = load_training_data(filenames, 
+                                                              n_spectral_points=n_spec_points,
+                                                              new_logtau_height = np.array([-2.0, -0.8, 0]))
         
         plot_stokes(stokes=stokes_data[0], 
                     wl_points = wl_points,

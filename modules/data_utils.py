@@ -1,8 +1,11 @@
 import numpy as np
 
+import pandas as pd
+
 from skimage import filters
 
-from scipy.interpolate import interp1d
+from scipy.interpolate import RegularGridInterpolator, CubicSpline
+from scipy.integrate import simpson
 
 from sklearn.model_selection import train_test_split
 
@@ -65,7 +68,6 @@ class MURaM:
         self.nz = 256
         self.od = 20  # height axis
         self.ny = 480
-
     def charge_quantities(self) -> None:
         """
         Load and process the atmospheric and Stokes quantities from the data files.
@@ -76,14 +78,20 @@ class MURaM:
                 ######################## 
                       """)
         
-        print("Charging temperature ...")
-        mtpr = np.load(self.ptm / "opt_depth" / f"mtpr_logtau_{self.filename}.npy").flatten()
+        
+        quantities_dir = "geom_height"
+        print("Charging temperature and pressure...")
+        eos = eos = np.fromfile(os.path.join(quantities_dir,  f"eos.{self.filename}"), dtype=np.float32)
+        eos = eos.reshape((2, self.nx*self.nz*self.ny), order = "C")
+        mtpr = eos[0]
+        mpre = eos[1]
         print("mtpr shape:", mtpr.shape)
+        print("mpre shape:", mtpr.shape)
         
         print("Charging magnetic field vector...")
-        mbxx = np.load(self.ptm / "opt_depth" / f"mbxx_logtau_{self.filename}.npy")
-        mbyy = np.load(self.ptm / "opt_depth" / f"mbyy_logtau_{self.filename}.npy")
-        mbzz = np.load(self.ptm / "opt_depth" / f"mbzz_logtau_{self.filename}.npy")
+        mbxx = np.load(self.ptm / quantities_dir / f"mbxx_{self.filename}.npy")
+        mbyy = np.load(self.ptm / quantities_dir / f"mbyy_{self.filename}.npy")
+        mbzz = np.load(self.ptm / quantities_dir / f"mbzz_{self.filename}.npy")
         
         coef = np.sqrt(4.0 * np.pi)  # cgs units conversion
         
@@ -95,19 +103,13 @@ class MURaM:
         print("mbyy shape:", mbyy.shape)
         
         print("Charging density...")
-        mrho = np.load(self.ptm / "opt_depth" / f"mrho_logtau_{self.filename}.npy")
+        mrho = np.load(self.ptm / quantities_dir / f"mrho_{self.filename}.npy")
         print("mrho shape:", mrho.shape)
         
         print("Charge velocity...")
-        mvxx = np.load(self.ptm / "opt_depth" / f"mvxx_logtau_{self.filename}.npy")
-        mvyy = np.load(self.ptm / "opt_depth" / f"mvyy_logtau_{self.filename}.npy")
-        mvzz = np.load(self.ptm / "opt_depth" / f"mvzz_logtau_{self.filename}.npy")
-        print("mvxx shape:", mvxx.shape)
+        mvzz = np.load(self.ptm / quantities_dir / f"mvzz_{self.filename}.npy")
         print("mvzz shape:", mvzz.shape)
-        print("mvyy shape:", mbyy.shape)
         
-        mvxx = mvxx / mrho
-        mvyy = mvyy / mrho
         mvzz = mvzz / mrho
         
         print(f"""
@@ -123,10 +125,10 @@ class MURaM:
         print("Quantities modified!")
 
         print("Creating atmosphere quantities array...")
-        self.mags_names = [r"$T$", r"$\rho$", r"$B_{Q}$", r"$B_{U}$", r"$B_{V}$", r"$v_{z}$"]
-        self.atm_quant = np.array([mtpr, mrho, mbqq, mbuu, mbvv, mvzz])
+        self.mags_names = [r"$T$", r"$P$", r"$\rho$", r"$B_{Q}$", r"$B_{U}$", r"$B_{V}$", r"$v_{z}$"]
+        self.atm_quant = np.array([mtpr, mpre, mrho, mbqq, mbuu, mbvv, mvzz])
         self.atm_quant = np.moveaxis(self.atm_quant, 0, 1)
-        self.atm_quant = np.reshape(self.atm_quant, (self.nx, self.od, self.ny, self.atm_quant.shape[-1]))
+        self.atm_quant = np.reshape(self.atm_quant, (self.nx, self.nz, self.ny, self.atm_quant.shape[-1]))
         self.atm_quant = np.moveaxis(self.atm_quant, 1, 2)
         
         plot_atmosphere_quantities(atm_quant=self.atm_quant, 
@@ -139,7 +141,50 @@ class MURaM:
         self.I_63005 = self.stokes[:, :, 0, 0]  # Intensity map that is going to be used to balance intergranular and granular regions.
         print("Charged!")
         print("self.stokes shape", self.stokes.shape)
+    def opt_depth_stratif(self, new_logtau_height: np.ndarray) -> None:
+        
+        geom_detph_path = self.ptm / "geom_height"
+        
+        #Find the optical depth values for the original MURaM simulation domain.
+        od_file_name = f"log_tau_{self.filename}.npy"
+        if not os.path.exists(geom_detph_path / od_file_name):
+            muram_logtau = od_cube(muram = self, 
+                    muram_box = self.atm_quant, 
+                    filename = self.filename, 
+                    od_path = geom_detph_path,
+                    od_name = od_file_name)
+        else :
+            muram_logtau = charge_logtau(filename = self.filename, 
+                                    shape = (self.nx, self.ny, self.nz), #The logtau is already shaped for nx,ny,nz by default
+                                    logtau_path = geom_detph_path)
+            
+            
+        # Mapping the quantities to the new optical depth stratification
+        opt_detph_path = self.ptm / "opt_depth"
+        
+        n_logtau = new_logtau_height.shape[0]
+        stratif_base_name = f"_logtau_{n_logtau}_heights.npy"
+        
+        output_names = ["mtpr", "mpre", "mrho", "mbxx", "mbyy", "mbzz", "mvxx", "mvyy", "mvzz"]
 
+        # Check if the quantities are already mapped
+        check_exist = 0
+        for i, out_name in enumerate(output_names):
+            if not os.path.exists(opt_detph_path / f"{out_name}" + stratif_base_name):
+                print(f"Mapping {self.filename} {output_names[i]} to log tau...")
+                self.atm_quant[..., i] = map_to_logtau(muram_quantity = self.atm_quant[..., i], 
+                            muram_logtau = muram_logtau,
+                            output_name  = f"{out_name}" + stratif_base_name)
+                print("Done!")
+            else:
+                check_exist += 1
+                
+        # If all quantities or some are already mapped
+        if check_exist > 0:
+            print("All quantities already mapped!")     
+            self.atm_quant = charge_logtau_muram(filename = self.filename,
+                                            shape = (self.nx, self.ny, n_logtau),
+                                            opt_path = opt_detph_path)
     def degrade_spec_resol(self, new_points: int) -> None:
         """
         Degrade the spectral resolution of the Stokes parameters.
@@ -197,7 +242,7 @@ class MURaM:
 
         # These are the new wavelength values for the degraded resolution
         self.new_wl = (new_resol * 0.01) + 6300.5
-    def scale_quantities(self) -> None:
+    def scale_quantities(self, stokes_weights: list[int] = [1,10,10,10]) -> None:
         """
         Scale the atmospheric and Stokes quantities.
         """
@@ -264,11 +309,11 @@ class MURaM:
             for jz in range(self.ny):
                 for i in range(self.stokes.shape[-1]):
                     cont_values = self.stokes[jx, jz, cont_indices, 0]  # corresponding intensity values to the selected continuum indices
-                    cont_model = interp1d(wl_cont_values, cont_values, kind="cubic")  # Interpolation applied over the assumed continuum values
+                    cont_model = CubicSpline(wl_cont_values, cont_values, kind="cubic")  # Interpolation applied over the assumed continuum values
                     scaled_stokes[jx, jz, :, i] = self.stokes[jx, jz, :, i] / cont_model(self.new_wl)
         self.stokes = scaled_stokes
         
-        scaling_importance = [1, 10, 10, 10]  # Stokes parameters importance levels -> mapping Q, U and V to 0.1 of the intensity scale
+        scaling_importance = stokes_weights  # Stokes parameters importance levels -> mapping Q, U and V to 0.1 of the intensity scale
         for i in range(len(scaling_importance)):
             self.stokes[:, :, :, i] = self.stokes[:, :, :, i] * scaling_importance[i]
             
@@ -342,6 +387,171 @@ class MURaM:
         print(f"stokes shape: {self.stokes.shape}")
         print("Done")
 
+##############################################################
+# Preprocessing utils
+##############################################################
+
+def od_cube(muram: MURaM, muram_box: dict, filename: str, od_path: Path, od_name: str) -> np.ndarray:
+            """
+            Returns an array of the same size of the domain of the MURaM simulation with the values of optical depth for each cell.
+            Parameters:
+                
+            Returns:
+                    Array with the values of optical depth for each of the x,y,z positions in the domain of the simulation.
+                
+            """
+            
+            # Temperature and pressure values for the opacity interpolation
+            tab_T = np.array([3.32, 3.34, 3.36, 3.38, 3.40, 3.42, 3.44, 3.46, 3.48, 3.50,
+                            3.52, 3.54, 3.56, 3.58, 3.60, 3.62, 3.64, 3.66, 3.68, 3.70,
+                            3.73, 3.76, 3.79, 3.82, 3.85, 3.88, 3.91, 3.94, 3.97, 4.00,
+                            4.05, 4.10, 4.15, 4.20, 4.25, 4.30, 4.35, 4.40, 4.45, 4.50,
+                            4.55, 4.60, 4.65, 4.70, 4.75, 4.80, 4.85, 4.90, 4.95, 5.00,
+                            5.05, 5.10, 5.15, 5.20, 5.25, 5.30])
+
+            tab_p = np.array([-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2., 2.5,
+                            3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8.])
+            
+            # Charging the table of temperature indices, pressure indices and opacities
+            df_kappa = pd.read_csv('../csv/kappa.0.dat', delim_whitespace=True, header=None)
+            df_kappa.columns = ["Temperature index", "Pressure index", "Opacity value"]
+            temp_indices = df_kappa["Temperature index" ].unique()
+            press_indices = df_kappa["Pressure index"].unique()
+            opacity_values = df_kappa.pivot(index = "Pressure index", columns = "Temperature index", values = "Opacity value").values
+            
+            #Selection of the temperature and pressure values corresponding to the opacities.
+            T = tab_T[temp_indices]
+            P = tab_p[press_indices]
+            K = opacity_values
+            
+            # Creation of the kappa * density and optical depth arrays for saving the values to be interpolated and calculated.
+            
+            muram_T = muram_box[...,0]
+            muram_P = muram_box[...,1]
+            muram_Rho = muram_box[...,2]
+            
+            kappa_rho = np.zeros_like(muram_T)
+            tau = np.zeros_like(kappa_rho)
+            
+            # Checking the values of temperature and pressure in the arrays are inside the range of valid values in the opacity table.
+            def limit_values(data, min_val, max_val):
+                new_data = data.copy()
+                new_data[new_data >= max_val] = max_val
+                new_data[new_data <= min_val] = min_val
+                return new_data
+            
+            T_log = np.log10(muram_T) 
+            T_log = limit_values(T_log, T.min(), T.max())
+            P_log = np.log10(muram_P) 
+            P_log = limit_values(P_log, P.min(), P.max())
+            PT_log = np.array(list(zip(P_log.flatten(), T_log.flatten())))
+            print(f"Interpolating {filename} kappa...")
+            # kappa values interpolated and multiplied by the density.
+            kappa_interp = RegularGridInterpolator((P,T), K, method="linear")
+            kappa_rho = kappa_interp(PT_log)
+            kappa_rho = kappa_rho.reshape(muram_T.shape)
+            kappa_rho = np.multiply(kappa_rho, muram_Rho)
+            
+            # Optical depth array calculation
+            dz = 1e6 # 10 km -> 1e6 cm
+            tau[:,:,muram.nz-1] = 0
+
+            print(f"Calculating {filename} tau...")
+            for iz in range(1,muram.nz):
+                if iz % 50 == 0:
+                    print("height: ", iz)
+                for ix in range(muram.nx):
+                    for iy in range(muram.ny):
+                        kpz = kappa_rho[ix,iy,muram.nz-1-iz:]
+                        tau[ix,iy,muram.nz-1-iz] = simpson(y = kpz, 
+                                            dx = dz)
+
+            logtau = np.log10(tau)
+            print("log tau Done!")
+            
+            np.save(od_path / od_name, logtau)
+            
+            return logtau
+def charge_logtau(filename: str, shape: tuple, logtau_path: str) -> np.ndarray:
+    """
+    Charges the distribution of log optical depth for the original MURaM simulation domain.
+    """
+    # optical depth values distributed on the original domain of MURaM
+    muram_logtau = np.load(os.path.join(logtau_path, f"log_tau_{filename}.npy")).reshape(shape)
+    return muram_logtau
+def map_to_logtau(muram: MURaM, 
+                  muram_quantity: np.ndarray, 
+                  muram_logtau: np.ndarray, 
+                  output_name: str, 
+                  opt_path: str,
+                  new_logtau_height: np.ndarray = np.linspace(-2.5, 0, 20)) -> np.ndarray:
+    """
+    Returns an array of the same size of the domain of the MURaM simulation with the values of the data mapped to log tau.
+    Parameters:
+        
+    Returns
+        out: np.ndarray
+            Array of the atmosphere magnitudes re mapped to optical depth stratification.
+        
+    """
+    
+    def logtau_mapper(orig_arr: np.ndarray, 
+               corresp_logtau: np.ndarray,
+               new_logtau: np.ndarray) -> np.ndarray:
+        """
+        Function for mapping the quantities distribution from geometrical height to optical depth.
+        Args:
+            orig_arr(np.ndarray): Original array distributed along geometrical height to be mapped.
+            corresp_logtau(np.ndarray): Distribution of optical depth for the original array.
+            new_logtau(np.ndarray): Array of the new optical depth measurement of height for the mapping
+        Returns:
+            (np.ndarray) Array containing the mapped quantity to the new distribution on optical depth.
+        """
+
+        logtau_mapper = CubicSpline(x = corresp_logtau, y = orig_arr)
+        new_arr = logtau_mapper(new_logtau)
+        return new_arr
+    
+    # New optical depth stratification array.
+    n_logtau = new_logtau_height.shape[0]
+
+    # Mapping to the new optical depth stratification
+    quantity_tau = np.zeros((muram.nx,n_logtau,muram.ny))
+    for ix in range(muram.nx):
+        if ix % 100 == 0:
+            print(ix)
+        for iy in range(muram.ny):
+            quantity_tau[ix,:,iy] = logtau_mapper(orig_arr = muram_quantity[ix,iy,:], 
+                                           corresp_logtau = muram_logtau[ix,iy,:], 
+                                           new_logtau = new_logtau_height)
+    
+    output_path = os.path.join(opt_path, output_name)
+    np.save(output_path, quantity_tau.flatten())
+    print(f"saved in {output_path}")
+    
+    return quantity_tau
+def charge_logtau_muram(filename: str, shape: tuple, opt_path: str) -> dict:
+    """
+    Charges a dictionary with the thermodynamical information of the simulation.
+    """
+    nx, ny, nlog = shape
+    
+    # Charge the EOS data and the density info.
+    mtpr = np.load(opt_path / f"mtpr_logtau_{filename}.npy")
+    mpre = np.load(opt_path / f"mpre_logtau_{filename}.npy")
+    mrho= np.load(opt_path / f"mrho_logtau_{filename}.npy")
+    mbxx= np.load(opt_path / f"mbxx_logtau_{filename}.npy")
+    mbyy= np.load(opt_path / f"mbyy_logtau_{filename}.npy")
+    mbzz= np.load(opt_path / f"mbzz_logtau_{filename}.npy")
+    mvzz= np.load(opt_path / f"mvzz_logtau_{filename}.npy")
+    
+    
+    # Create a dictionary for saving the quantities
+    muram_box = np.array([mtpr, mpre, mrho, mbxx, mbyy, mbzz, mvzz])
+    muram_box = np.moveaxis(muram_box, 0, 1)
+    muram_box = np.moveaxis(muram_box, 1, 2)
+    muram_box = np.moveaxis(muram_box, 2, 3)
+    return muram_box
 
 ##############################################################
 # Plot utils
@@ -423,13 +633,16 @@ def plot_atmosphere_quantities(atm_quant: np.ndarray, image_name: str, images_di
 ##############################################################
 # loading utils
 ##############################################################
-def load_training_data(filenames: list[str], n_spectral_points: int = 36) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def load_training_data(filenames: list[str], 
+                       n_spectral_points: int = 36, 
+                       new_logtau_height: np.ndarray = np.linspace(-2.5, 0, 20)) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Load and preprocess training data from a list of filenames.
     This function reads data from multiple files, processes it, and returns the processed data.
     Parameters:
         filenames (list[str]): List of file paths to load data from.
         n_spectral_points (int): Number of new points for spectral resolution degradation.
+        new_logtau_height (np.ndarray): Array of new optical depth heights for mapping.
     Returns:
     tuple[np.ndarray, np.ndarray, np.ndarray]: A tuple containing:
         - atm_data (np.ndarray): Array of atmospheric quantities.
@@ -444,6 +657,7 @@ def load_training_data(filenames: list[str], n_spectral_points: int = 36) -> tup
         #Creation of the MURaM object for each filename for charging the data.
         muram = MURaM(filename=fln)
         muram.charge_quantities()
+        muram.opt_depth_stratif(new_logtau_height=new_logtau_height)
         muram.degrade_spec_resol(new_points=n_spectral_points)
         muram.scale_quantities()
         muram.gran_intergran_balance()
@@ -456,11 +670,15 @@ def load_training_data(filenames: list[str], n_spectral_points: int = 36) -> tup
     
     return atm_data, stokes_data, muram.new_wl
 
-def load_data_cubes(filenames: list[str], n_spectral_points: int = 36) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def load_data_cubes(filenames: list[str], 
+                    n_spectral_points: int = 36,
+                     new_logtau_height: np.ndarray = np.linspace(-2.5, 0, 20)) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Loads data cubes from a list of filenames and processes them using the MURaM class.
     Args:
         filenames (list[str]): List of file paths to load data from.
+        n_spectral_points (int): Number of new points for spectral resolution degradation.
+        new_logtau_height (np.ndarray): Array of new optical depth heights for mapping.
     Returns:
         tuple: A tuple containing:
             - atm_data (list[np.ndarray]): List of atmospheric data arrays.
@@ -476,6 +694,7 @@ def load_data_cubes(filenames: list[str], n_spectral_points: int = 36) -> tuple[
         #Creation of the MURaM object for each filename for charging the data.
         muram = MURaM(filename=fln)
         muram.charge_quantities()
+        muram.opt_depth_stratif(new_logtau_height=new_logtau_height)
         muram.degrade_spec_resol(new_points=n_spectral_points)
         muram.scale_quantities()
 
