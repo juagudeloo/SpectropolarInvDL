@@ -1,52 +1,21 @@
 import torch
 from torch import nn
 
-class LinearModel(nn.Module):
-    def __init__(self, in_shape: int, out_shape: int, hidden_units: int):
+class LinearJarolim(nn.Module):
+    def __init__(self, in_shape: int, out_shape: int, hidden_units: int, n_layers: int):
         super().__init__()
         self.name = "SimpleLinear"
-        self.simple_model = nn.Sequential(
-        nn.Linear(in_features = in_shape, out_features = hidden_units),
-        nn.ReLU(),
-        nn.Linear(in_features = hidden_units, out_features = hidden_units),
-        nn.ReLU(),
-        nn.Linear(in_features = hidden_units, out_features = hidden_units),
-        nn.ReLU(),
-        nn.Linear(in_features = hidden_units, out_features = hidden_units),
-        nn.ReLU(),
-        nn.Linear(in_features = hidden_units, out_features = hidden_units),
-        nn.ReLU(),
-        nn.Linear(in_features = hidden_units, out_features = out_shape)
-        )
-    def forward(self, x):
-        return self.simple_model(x)
-
-
-class CNN1DModel(nn.Module):
-    def __init__(self, in_shape: int, out_shape: int, hidden_units: int, signal_length: int):
-        super().__init__()
-        self.name = "SimpleCNN1D"
+        self.n_layers = n_layers
+        self.input = nn.Linear(in_features = in_shape, out_features = hidden_units)
         
-        # Hyperparameters
-        padding = 1
-        kernel_size = 2
-        stride = 1
+        self.hidden_linear = nn.Linear(in_features = hidden_units, out_features = hidden_units)
+
+        self.output = nn.Linear(in_features = hidden_units, out_features = out_shape)
         
-        # Model
-        self.simple_conv = nn.Sequential(
-            nn.Conv1d(in_channels=in_shape, out_channels=hidden_units, kernel_size=kernel_size, stride=stride, padding=padding),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=hidden_units, out_channels=hidden_units*2, kernel_size=kernel_size, stride=stride, padding=padding),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=hidden_units*2, out_channels=hidden_units*4, kernel_size=kernel_size, stride=stride, padding=padding),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=hidden_units*4, out_channels=hidden_units*8, kernel_size=kernel_size, stride=stride, padding=padding),
-            nn.ReLU(),
-            nn.AdaptiveAvgPool1d(1),  # Ensure the output size is fixed to 1
-            nn.Flatten(),
-            nn.Dropout(p=0.5, inplace=False),
-            nn.Linear(in_features=hidden_units*8, out_features=out_shape)
-        )
-    
     def forward(self, x):
-        return self.simple_conv(x)
+        x = self.input(x)
+        for i in range(self.n_layers):
+            x = self.hidden_linear(x)
+            x = torch.sin(x)
+        x = self.output(x)
+        return x

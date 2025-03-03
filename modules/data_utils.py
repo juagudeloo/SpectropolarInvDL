@@ -635,7 +635,8 @@ def plot_atmosphere_quantities(atm_quant: np.ndarray, image_name: str, images_di
 ##############################################################
 def load_training_data(filenames: list[str], 
                        n_spectral_points: int = 36, 
-                       new_logtau_height: np.ndarray = np.linspace(-2.5, 0, 20)) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+                       new_logtau_height: np.ndarray = np.linspace(-2.5, 0, 20),
+                       stokes_weights: list[int] = [1,10,10,10]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Load and preprocess training data from a list of filenames.
     This function reads data from multiple files, processes it, and returns the processed data.
@@ -659,7 +660,7 @@ def load_training_data(filenames: list[str],
         muram.charge_quantities()
         muram.opt_depth_stratif(new_logtau_height=new_logtau_height)
         muram.degrade_spec_resol(new_points=n_spectral_points)
-        muram.scale_quantities()
+        muram.scale_quantities(stokes_weights=stokes_weights)
         muram.gran_intergran_balance()
 
         atm_data.append(muram.atm_quant)
@@ -672,7 +673,8 @@ def load_training_data(filenames: list[str],
 
 def load_data_cubes(filenames: list[str], 
                     n_spectral_points: int = 36,
-                     new_logtau_height: np.ndarray = np.linspace(-2.5, 0, 20)) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+                     new_logtau_height: np.ndarray = np.linspace(-2.5, 0, 20),
+                     stokes_weights: list[int] = [1,10,10,10]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Loads data cubes from a list of filenames and processes them using the MURaM class.
     Args:
@@ -696,7 +698,7 @@ def load_data_cubes(filenames: list[str],
         muram.charge_quantities()
         muram.opt_depth_stratif(new_logtau_height=new_logtau_height)
         muram.degrade_spec_resol(new_points=n_spectral_points)
-        muram.scale_quantities()
+        muram.scale_quantities(stokes_weights=stokes_weights)
 
         atm_data.append(muram.atm_quant)
         stokes_data.append(muram.stokes)
