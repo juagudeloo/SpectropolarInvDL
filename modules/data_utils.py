@@ -510,8 +510,10 @@ def map_to_logtau(muram: MURaM,
         Returns:
             (np.ndarray) Array containing the mapped quantity to the new distribution on optical depth.
         """
-
-        logtau_mapper = CubicSpline(x = corresp_logtau, y = orig_arr)
+        sort_indices = np.argsort(corresp_logtau)
+        corresp_logtau_sorted = corresp_logtau[sort_indices]
+        orig_arr_sorted = orig_arr[sort_indices]
+        logtau_mapper = CubicSpline(x = corresp_logtau_sorted, y = orig_arr_sorted)
         new_arr = logtau_mapper(new_logtau)
         return new_arr
     
