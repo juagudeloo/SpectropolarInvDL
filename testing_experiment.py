@@ -1,0 +1,56 @@
+import sys
+
+from timeit import default_timer as timer 
+
+import numpy as np
+import torch
+from torch import nn
+
+#MODULES IMPORT
+sys.path.append("../modules")
+from modules.data_utils import load_training_data, create_dataloaders, plot_stokes, plot_atm_profile
+from modules.nn_models import LinearJarolim
+from modules.train_test_utils import train, set_seeds, create_writer, save_model
+
+def main():
+    ### DATA LOADING ###
+    #filenames to be readed for creating the dataset
+    filenames = ["080000", 
+                 #"085000", "090000"
+                 ]
+        
+    # Setup device agnostic code
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Tensors stored in: {device}")
+    
+    
+    
+    
+    ### Checking linear vs convolutional 1d models ###
+    
+    m_type = "linear"
+    epochs = 10
+    lr = 1e-3
+    n_spec_points = 114
+    test_stokes_weights = [[1,10,10,10],
+                      [1,20,20,10],
+                      [1,40,40,10],
+                      [1,80,80,10],
+                      [1,160,160,10]]
+    logtau = np.array([-2.0, -0.8, 0])
+    
+    #1. Loop through stokes weights
+    for stokes_weights in test_stokes_weights:
+        atm_data, stokes_data, wl_points = load_training_data(filenames, 
+                                                                n_spectral_points=n_spec_points,
+                                                                new_logtau_height = logtau,
+                                                                stokes_weights = stokes_weights)
+        
+        plot_stokes(stokes=stokes_data[0], 
+                    wl_points = wl_points,
+                    image_name = "example_stokes",)
+        
+        print(f"Atmosphere data shape: {atm_data[0].shape}")
+        plot_atm_profile(atm_data=atm_data[0],
+                         logtau= logtau,
+                         image_name = "example_atm_profile")
