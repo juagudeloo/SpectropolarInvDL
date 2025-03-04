@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 from pathlib import Path
+from joblib import Parallel, delayed
 
 class MURaM:
     """
@@ -317,12 +318,18 @@ class MURaM:
         cont_indices = [0, 1, int(len(self.new_wl) / 2) - 1, int(len(self.new_wl) / 2), int(len(self.new_wl) / 2) + 1, -2, -1]
         wl_cont_values = self.new_wl[cont_indices]  # corresponding wavelength values to the selected continuum indices
         print("calculating the continuum...")
-        for jx in tqdm(range(self.nx)):
-            for jz in range(self.ny):
-                for i in range(self.stokes.shape[-1]):
-                    cont_values = self.stokes[jx, jz, cont_indices, 0]  # corresponding intensity values to the selected continuum indices
-                    cont_model = CubicSpline(wl_cont_values, cont_values)  # Interpolation applied over the assumed continuum values
-                    scaled_stokes[jx, jz, :, i] = self.stokes[jx, jz, :, i] / cont_model(self.new_wl)
+        def process_pixel(jx, jz):
+            scaled_pixel = np.zeros_like(self.stokes[jx, jz, :, :])
+            for i in range(self.stokes.shape[-1]):
+                cont_values = self.stokes[jx, jz, cont_indices, 0]  # corresponding intensity values to the selected continuum indices
+                cont_model = CubicSpline(wl_cont_values, cont_values)  # Interpolation applied over the assumed continuum values
+            scaled_pixel[:, i] = self.stokes[jx, jz, :, i] / cont_model(self.new_wl)
+            return jx, jz, scaled_pixel
+
+        results = Parallel(n_jobs=-1)(delayed(process_pixel)(jx, jz) for jx in range(self.nx) for jz in range(self.ny))
+
+        for jx, jz, scaled_pixel in results:
+            scaled_stokes[jx, jz, :, :] = scaled_pixel
         self.stokes = scaled_stokes
         
         scaling_importance = stokes_weights  # Stokes parameters importance levels -> mapping Q, U and V to 0.1 of the intensity scale
@@ -691,7 +698,7 @@ def plot_atm_profile(atm_data: np.ndarray,
     titles = ["Temperature", "Density", "Magnetic Field QQ", "Magnetic Field UU", "Magnetic Field VV", "Velocity YY"]
     
     for i in range(6):
-        ax[i // 3, i % 3].plot(logtau, atm_quant[:, atm_quant.shape[1] // 2, atm_quant.shape[2] // 2, i])
+        ax[i // 3, i % 3].plot(logtau, atm_data[:, atm_data.shape[1] // 2, atm_data.shape[2] // 2, i])
         ax[i // 3, i % 3].set_title(titles[i])
     
     images_dir = os.path.join(images_dir, atm_subdir)
