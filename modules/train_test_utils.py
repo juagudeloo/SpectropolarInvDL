@@ -149,6 +149,7 @@ def test_step(model: torch.nn.Module,
 
           # 1. Forward pass
           test_pred = model(X)
+          print("checking comparisons by loss:", test_pred.size(), y.size())
 
           # 2. Calculate and accumulate loss
           loss = loss_fn(test_pred, y)
