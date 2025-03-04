@@ -631,7 +631,6 @@ def plot_stokes(stokes: np.ndarray,
     fig.savefig(image_path)
 
     print(f"Saved image to: {image_path}")
-
 def plot_atmosphere_quantities(atm_quant: np.ndarray, image_name: str, images_dir: str = "images", atm_subdir: str = "atmosphere") -> None:
     """
     Plots the atmospheric quantities and saves the plot as an image file.
@@ -665,7 +664,43 @@ def plot_atmosphere_quantities(atm_quant: np.ndarray, image_name: str, images_di
     fig.savefig(image_path)
 
     print(f"Saved image to: {image_path}")
+def plot_atm_profile(atm_quant: np.ndarray,
+                     logtau: np.ndarray,
+                     image_name: str,
+                     images_dir: str = "images",
+                     atm_subdir: str = "atmosphere") -> None:
+    """
+    Plots the atmospheric profiles and saves the plot as an image file.
+    
+    Parameters:
+        atm_quant (np.ndarray): A 4D array where the last dimension represents different atmospheric quantities.
+        logtau (np.ndarray): An array of optical depth values.
+        image_name (str): The name of the image file to save.
+        images_dir (str, optional): The directory where the image will be saved. Default is "images".
+        atm_subdir (str, optional): The subdirectory within images_dir where the image will be saved. Default is "atmosphere".
+    
+    Returns:
+    None
+    Saves:
+    A plot of the atmospheric profiles as an image file in the specified directory.
+    """
+    
+    fig, ax = plt.subplots(2, 3, figsize=(20, 10))
+    fig.suptitle('Atmospheric Profiles', fontsize=16)
+    
+    titles = ["Temperature", "Density", "Magnetic Field QQ", "Magnetic Field UU", "Magnetic Field VV", "Velocity YY"]
+    
+    for i in range(6):
+        ax[i // 3, i % 3].plot(logtau, atm_quant[:, atm_quant.shape[1] // 2, atm_quant.shape[2] // 2, i])
+        ax[i // 3, i % 3].set_title(titles[i])
+    
+    images_dir = os.path.join(images_dir, atm_subdir)
+    if not os.path.exists(images_dir):
+        os.makedirs(images_dir)
+    image_path = os.path.join(images_dir, f"{image_name}_atm_profiles.pdf")
+    fig.savefig(image_path)
 
+    print(f"Saved image to: {image_path}")
 ##############################################################
 # loading utils
 ##############################################################
