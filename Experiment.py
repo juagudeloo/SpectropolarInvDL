@@ -66,11 +66,12 @@ def main():
                     linear = True)
         
         #Creating the model
-        hu = 256
+        hu = 2048
         model = LinearJarolim(in_shape=n_spec_points*4,
                               out_shape=7*3,
                               hidden_units=hu,
-                              n_layers=8).to(device)
+                              #n_layers=8
+                              ).to(device)
         model = model.float()
         #Loss function
         loss_fn = nn.MSELoss() # this is also called "criterion"/"cost function" in some places
