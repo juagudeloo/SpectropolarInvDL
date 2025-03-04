@@ -20,7 +20,6 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 from pathlib import Path
-from joblib import Parallel, delayed
 
 class MURaM:
     """
@@ -318,18 +317,12 @@ class MURaM:
         cont_indices = [0, 1, int(len(self.new_wl) / 2) - 1, int(len(self.new_wl) / 2), int(len(self.new_wl) / 2) + 1, -2, -1]
         wl_cont_values = self.new_wl[cont_indices]  # corresponding wavelength values to the selected continuum indices
         print("calculating the continuum...")
-        def process_pixel(jx, jz):
-            scaled_pixel = np.zeros_like(self.stokes[jx, jz, :, :])
-            for i in range(self.stokes.shape[-1]):
-                cont_values = self.stokes[jx, jz, cont_indices, 0]  # corresponding intensity values to the selected continuum indices
-                cont_model = CubicSpline(wl_cont_values, cont_values)  # Interpolation applied over the assumed continuum values
-            scaled_pixel[:, i] = self.stokes[jx, jz, :, i] / cont_model(self.new_wl)
-            return jx, jz, scaled_pixel
-
-        results = Parallel(n_jobs=-1)(delayed(process_pixel)(jx, jz) for jx in range(self.nx) for jz in range(self.ny))
-
-        for jx, jz, scaled_pixel in results:
-            scaled_stokes[jx, jz, :, :] = scaled_pixel
+        for jx in tqdm(range(self.nx)):
+            for jz in range(self.ny):
+                for i in range(self.stokes.shape[-1]):
+                    cont_values = self.stokes[jx, jz, cont_indices, 0]  # corresponding intensity values to the selected continuum indices
+                    cont_model = CubicSpline(wl_cont_values, cont_values)  # Interpolation applied over the assumed continuum values
+                    scaled_stokes[jx, jz, :, i] = self.stokes[jx, jz, :, i] / cont_model(self.new_wl)
         self.stokes = scaled_stokes
         
         scaling_importance = stokes_weights  # Stokes parameters importance levels -> mapping Q, U and V to 0.1 of the intensity scale
@@ -660,7 +653,7 @@ def plot_atmosphere_quantities(atm_quant: np.ndarray, image_name: str, images_di
     titles = ["Temperature", "Pressure", "Density", "Magnetic Field QQ", "Magnetic Field UU", "Magnetic Field VV", "Velocity YY"]
     
     for i in range(7):
-        ax[i // 4, i % 4].imshow(atm_quant[:, :, atm_quant.shape[2] // 2 , i], cmap='viridis')
+        ax[i // 4, i % 4].imshow(atm_quant[:, :, 190 , i], cmap='viridis')
         ax[i // 4, i % 4].set_title(titles[i])
         ax[i // 4, i % 4].axis('off')
     
@@ -706,14 +699,11 @@ def plot_atm_profile(atm_data: np.ndarray,
     
     # Remove the empty subplot
     fig.delaxes(ax[1, 3])
-    
     images_dir = os.path.join(images_dir, atm_subdir)
     if not os.path.exists(images_dir):
         os.makedirs(images_dir)
-    image_path = os.path.join(images_dir, f"{image_name}_atm_profiles.pdf")
+    image_path = os.path.join(images_dir, f"{image_name}_atm_quantities_opt_depth.pdf")
     fig.savefig(image_path)
-
-    print(f"Saved image to: {image_path}")
 ##############################################################
 # loading utils
 ##############################################################

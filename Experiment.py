@@ -52,6 +52,7 @@ def main():
                     wl_points = wl_points,
                     image_name = "example_stokes",)
         
+        print(f"Atmosphere data shape: {atm_data[0].shape}")
         plot_atm_profile(atm_data=atm_data[0],
                          logtau= logtau,
                          image_name = "example_atm_profile")
