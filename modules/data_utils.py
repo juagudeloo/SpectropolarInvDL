@@ -694,7 +694,7 @@ def plot_atm_profile(atm_data: np.ndarray,
     titles = ["Temperature", "Pressure", "Density", "Magnetic Field QQ", "Magnetic Field UU", "Magnetic Field VV", "Velocity YY"]
     
     for i in range(7):
-        ax[i // 4, i % 4].plot(logtau, atm_data[atm_data.shape[1] // 2,:, i])
+        ax[i // 4, i % 4].plot(logtau, atm_data[:, i])
         ax[i // 4, i % 4].set_title(titles[i])
     
     # Remove the empty subplot
