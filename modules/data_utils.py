@@ -664,7 +664,7 @@ def plot_atmosphere_quantities(atm_quant: np.ndarray, image_name: str, images_di
     fig.savefig(image_path)
 
     print(f"Saved image to: {image_path}")
-def plot_atm_profile(atm_quant: np.ndarray,
+def plot_atm_profile(atm_data: np.ndarray,
                      logtau: np.ndarray,
                      image_name: str,
                      images_dir: str = "images",
