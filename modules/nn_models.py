@@ -4,7 +4,7 @@ from torch import nn
 import torch
 from torch import nn
 
-class LinearModel(nn.Module):
+class LinearJarolim(nn.Module):
     def __init__(self, in_shape: int, out_shape: int, hidden_units: int):
         super().__init__()
         self.name = "SimpleLinear"
