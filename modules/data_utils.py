@@ -654,15 +654,18 @@ def plot_atmosphere_quantities(atm_quant: np.ndarray, image_name: str, images_di
     A plot of the atmospheric quantities as an image file in the specified directory.
     """
     
-    fig, ax = plt.subplots(2, 3, figsize=(20, 10))
+    fig, ax = plt.subplots(2, 4, figsize=(20, 10))
     fig.suptitle('Atmospheric Quantities', fontsize=16)
     
-    titles = ["Temperature", "Density", "Magnetic Field QQ", "Magnetic Field UU", "Magnetic Field VV", "Velocity YY"]
+    titles = ["Temperature", "Pressure", "Density", "Magnetic Field QQ", "Magnetic Field UU", "Magnetic Field VV", "Velocity YY"]
     
-    for i in range(6):
-        ax[i // 3, i % 3].imshow(atm_quant[:, :, atm_quant.shape[2] // 2 , i], cmap='viridis')
-        ax[i // 3, i % 3].set_title(titles[i])
-        ax[i // 3, i % 3].axis('off')
+    for i in range(7):
+        ax[i // 4, i % 4].imshow(atm_quant[:, :, atm_quant.shape[2] // 2 , i], cmap='viridis')
+        ax[i // 4, i % 4].set_title(titles[i])
+        ax[i // 4, i % 4].axis('off')
+    
+    # Remove the empty subplot
+    fig.delaxes(ax[1, 3])
     
     images_dir = os.path.join(images_dir, atm_subdir)
     if not os.path.exists(images_dir):
@@ -692,14 +695,17 @@ def plot_atm_profile(atm_data: np.ndarray,
     A plot of the atmospheric profiles as an image file in the specified directory.
     """
     
-    fig, ax = plt.subplots(2, 3, figsize=(20, 10))
+    fig, ax = plt.subplots(2, 4, figsize=(20, 10))
     fig.suptitle('Atmospheric Profiles', fontsize=16)
     
-    titles = ["Temperature", "Density", "Magnetic Field QQ", "Magnetic Field UU", "Magnetic Field VV", "Velocity YY"]
+    titles = ["Temperature", "Pressure", "Density", "Magnetic Field QQ", "Magnetic Field UU", "Magnetic Field VV", "Velocity YY"]
     
-    for i in range(6):
-        ax[i // 3, i % 3].plot(logtau, atm_data[:, atm_data.shape[1] // 2, atm_data.shape[2] // 2, i])
-        ax[i // 3, i % 3].set_title(titles[i])
+    for i in range(7):
+        ax[i // 4, i % 4].plot(logtau, atm_data[atm_data.shape[1] // 2,:, i])
+        ax[i // 4, i % 4].set_title(titles[i])
+    
+    # Remove the empty subplot
+    fig.delaxes(ax[1, 3])
     
     images_dir = os.path.join(images_dir, atm_subdir)
     if not os.path.exists(images_dir):
