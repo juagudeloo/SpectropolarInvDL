@@ -193,6 +193,8 @@ class MURaM:
                                             shape = (self.nx, self.ny, n_logtau),
                                             opt_path = opt_detph_path)
         self.atm_quant = new_atm_quant
+        plot_atmosphere_quantities(atm_quant=self.atm_quant, 
+                                   image_name=f"{self.filename}_atm_quantities_opt_depth.pdf")
         print("The new shape of the atmosphere quantities is:", self.atm_quant.shape)
         
     def degrade_spec_resol(self, new_points: int) -> None:
@@ -609,13 +611,17 @@ def plot_stokes(stokes: np.ndarray,
     fig, ax = plt.subplots(1, 4, figsize=(20, 5))
     step_value = wl_points[1] - wl_points[0]
     fig.suptitle(f'Stokes Parameters (Step: {step_value:.2f} nm)', fontsize=16)
-    ax[0].scatter(wl_points, stokes[:, 0])
+    ax[0].scatter(wl_points, stokes[:, 0], color="red", s=5)
+    ax[0].plot(wl_points, stokes[:, 0], "k")
     ax[0].set_title("I")
-    ax[1].scatter(wl_points, stokes[:, 1])
+    ax[1].scatter(wl_points, stokes[:, 1], color="red", s=5)
+    ax[1].plot(wl_points, stokes[:, 1], "k")
     ax[1].set_title("Q")
-    ax[2].scatter(wl_points, stokes[:, 2])
+    ax[2].scatter(wl_points, stokes[:, 2], color="red", s=5)
+    ax[2].plot(wl_points, stokes[:, 2], "k")
     ax[2].set_title("U")
-    ax[3].scatter(wl_points, stokes[:, 3])
+    ax[3].scatter(wl_points, stokes[:, 3], color="red", s=5)
+    ax[3].plot(wl_points, stokes[:, 3], "k")
     ax[3].set_title("V")
     
     images_dir = os.path.join(images_dir, stokes_subdir)
