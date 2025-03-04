@@ -132,7 +132,7 @@ class MURaM:
         self.atm_quant = np.moveaxis(self.atm_quant, 1, 2)
         
         plot_atmosphere_quantities(atm_quant=self.atm_quant, 
-                                   image_name=f"{self.filename}_atm_quantities.pdf")
+                                   image_name=f"{self.filename}_atm_quantities")
         print("Created!")
         print("atm_quant shape:", self.atm_quant.shape)
 
@@ -194,7 +194,7 @@ class MURaM:
                                             opt_path = opt_detph_path)
         self.atm_quant = new_atm_quant
         plot_atmosphere_quantities(atm_quant=self.atm_quant, 
-                                   image_name=f"{self.filename}_atm_quantities_opt_depth.pdf")
+                                   image_name=f"{self.filename}_atm_quantities_opt_depth")
         print("The new shape of the atmosphere quantities is:", self.atm_quant.shape)
         
     def degrade_spec_resol(self, new_points: int) -> None:
@@ -663,7 +663,7 @@ def plot_atmosphere_quantities(atm_quant: np.ndarray, image_name: str, images_di
     images_dir = os.path.join(images_dir, atm_subdir)
     if not os.path.exists(images_dir):
         os.makedirs(images_dir)
-    image_path = os.path.join(images_dir, f"{image_name}_atm_quantities.pdf")
+    image_path = os.path.join(images_dir, f"{image_name}.pdf")
     fig.savefig(image_path)
 
     print(f"Saved image to: {image_path}")
@@ -702,7 +702,7 @@ def plot_atm_profile(atm_data: np.ndarray,
     images_dir = os.path.join(images_dir, atm_subdir)
     if not os.path.exists(images_dir):
         os.makedirs(images_dir)
-    image_path = os.path.join(images_dir, f"{image_name}_atm_quantities_opt_depth.pdf")
+    image_path = os.path.join(images_dir, f"{image_name}.pdf")
     fig.savefig(image_path)
 ##############################################################
 # loading utils

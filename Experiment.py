@@ -57,12 +57,6 @@ def main():
                          logtau= logtau,
                          image_name = "example_atm_profile")
         
-        # Create dataset and dataloaders
-        train_dataloader, test_dataloader = create_dataloaders(stokes_data = stokes_data,
-                        atm_data = atm_data,
-                        device = device,
-                        batch_size = 80)
-        
         #2. Loop through model types
         print(f"Training {m_type} models")
         train_dataloader, test_dataloader = create_dataloaders(stokes_data = stokes_data,
